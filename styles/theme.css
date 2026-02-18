@@ -1,0 +1,70 @@
+
+:root {
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-input: #f1f5f9;
+  --bg-nav: rgba(255, 255, 255, 0.8);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --orange-primary: #ea580c;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] {
+  --bg-main: #0f1115;
+  --bg-card: #1a1d23;
+  --bg-input: #12141a;
+  --bg-nav: rgba(15, 17, 21, 0.8);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #2d333d;
+  --orange-primary: #ff8c42;
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  --glass-bg: rgba(26, 29, 35, 0.7);
+}
+
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+/* Specific Input Styling */
+input, textarea, select {
+  background-color: var(--bg-input) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-color) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.6;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--orange-primary) !important;
+  background-color: var(--bg-card) !important;
+  box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.1) !important;
+}
+
+/* Global Overrides for Tailwind classes using Variables */
+.bg-white { background-color: var(--bg-card) !important; }
+.bg-slate-50 { background-color: var(--bg-input) !important; }
+.text-slate-900 { color: var(--text-main) !important; }
+.text-slate-500, .text-slate-600, .text-slate-400 { color: var(--text-muted) !important; }
+.border-slate-200, .border-slate-100 { border-color: var(--border-color) !important; }
+.shadow-sm { box-shadow: var(--shadow-sm) !important; }
+.shadow-xl { box-shadow: var(--shadow-md) !important; }
+
+/* Custom Scrollbar for Dark Mode */
+[data-theme="dark"] ::-webkit-scrollbar { width: 10px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #0f1115; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2d333d; border-radius: 5px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3d4450; }

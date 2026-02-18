@@ -1,0 +1,7 @@
+{
+  "name": "HomeFlame",
+  "description": "A premium Chef Cloud Kitchen platform connecting home chefs with customers. Built with Spring Boot backend and React frontend.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
