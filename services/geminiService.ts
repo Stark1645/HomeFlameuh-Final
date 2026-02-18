@@ -1,7 +1,11 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const API_KEY = (typeof process !== 'undefined' && process.env?.GEMINI_API_KEY) || '';
+const API_KEY =
+  (typeof import.meta !== 'undefined' &&
+    (import.meta as any).env?.VITE_GEMINI_API_KEY) ||
+  '';
+
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 export const generateDishDescription = async (dishName: string, ingredients: string): Promise<string> => {
