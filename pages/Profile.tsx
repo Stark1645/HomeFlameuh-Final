@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 
 interface ProfileProps {
   user: User;
@@ -17,8 +17,9 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdate }) => {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      const res = await mockApi.users.updateProfile(user.id, formData);
+      const res = await apiService.users.updateProfile(formData);
       onUpdate(res.data);
+      localStorage.setItem('hf_user', JSON.stringify(res.data));
       alert("Profile updated successfully!");
     } catch (err) {
       alert("Update failed.");

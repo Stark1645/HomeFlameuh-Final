@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { User, Order, ChefProfile, OrderStatus, Dish } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 import { generateDishDescription, generateChefBio, generateWeeklyMealPlan, optimizeMenuDescription } from '../services/geminiService';
 
 export const UserDashboard: React.FC<{ user: User, onTrackOrder?: (id: number) => void }> = ({ user, onTrackOrder }) => {
@@ -12,19 +12,22 @@ export const UserDashboard: React.FC<{ user: User, onTrackOrder?: (id: number) =
   const [isPlanning, setIsPlanning] = useState(false);
 
   useEffect(() => {
-    mockApi.orders.getByUserId(user.id).then(res => {
+    apiService.orders.getByUserId().then(res => {
       setOrders(res.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, [user]);
 
   const handleGeneratePlan = async () => {
     setIsPlanning(true);
-    // Fetch some dishes to give Gemini context
-    const chefsRes = await mockApi.chefs.getAll();
-    const dishesRes = await mockApi.dishes.getByChefId(chefsRes.data[0].userId);
-    const plan = await generateWeeklyMealPlan(mealPlanQuery || "healthy and variety", dishesRes.data);
-    setMealPlan(plan);
+    try {
+      const chefsRes = await apiService.chefs.getAll();
+      const dishesRes = await apiService.dishes.getByChefId(chefsRes.data[0].userId);
+      const plan = await generateWeeklyMealPlan(mealPlanQuery || "healthy and variety", dishesRes.data);
+      setMealPlan(plan);
+    } catch (error) {
+      console.error('Failed to generate plan:', error);
+    }
     setIsPlanning(false);
   };
 
@@ -43,11 +46,11 @@ export const UserDashboard: React.FC<{ user: User, onTrackOrder?: (id: number) =
             </div>
           ) : (
             <div className="space-y-4">
-              {orders.map(o => (
+              {orders.map((o, index) => (
                 <div key={o.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6 group hover:shadow-md transition-all">
                   <div className="flex items-center gap-6">
                      <div className="w-20 h-20 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 text-2xl font-black shadow-inner">
-                        #{o.id}
+                        #{index + 1}
                      </div>
                      <div>
                         <p className="font-bold text-xl text-slate-900">Chef {o.chefName}</p>
@@ -136,10 +139,10 @@ export const ChefDashboard: React.FC<{ user: User }> = ({ user }) => {
   const [isOptimizing, setIsOptimizing] = useState<number | null>(null);
 
   useEffect(() => {
-    mockApi.orders.getByChefId(user.id).then(res => setOrders(res.data));
-    mockApi.dishes.getByChefId(user.id).then(res => setDishes(res.data));
+    apiService.orders.getByChefId().then(res => setOrders(res.data)).catch(console.error);
+    apiService.dishes.getByChefId(user.id).then(res => setDishes(res.data)).catch(console.error);
     
-    mockApi.chefs.getAll().then(res => {
+    apiService.chefs.getAll().then(res => {
       const existing = res.data.find(c => c.userId === user.id);
       if (existing) {
         setProfile({
@@ -148,28 +151,38 @@ export const ChefDashboard: React.FC<{ user: User }> = ({ user }) => {
           hygieneRating: existing.hygieneRating.toString()
         });
       }
-    });
+    }).catch(console.error);
   }, [user]);
 
   const handleUpdateStatus = async (orderId: number, status: OrderStatus) => {
-    await mockApi.orders.updateStatus(orderId, status);
+    await apiService.orders.updateStatus(orderId, status);
     setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
   };
 
   const handleAddDish = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGeneratingDish(true);
-    const description = await generateDishDescription(newDish.name, newDish.ingredients);
-    const res = await mockApi.dishes.add({
-      chefId: user.id,
-      name: newDish.name,
-      price: parseFloat(newDish.price),
-      ingredients: newDish.ingredients,
-      description,
-      available: true
-    });
-    setDishes([...dishes, res.data]);
-    setNewDish({ name: '', price: '', ingredients: '' });
+    try {
+      console.log('=== ADDING DISH ===');
+      console.log('Chef user ID:', user.id);
+      console.log('Chef user _id:', (user as any)._id);
+      const description = await generateDishDescription(newDish.name, newDish.ingredients);
+      const res = await apiService.dishes.add({
+        chefId: user.id,
+        name: newDish.name,
+        price: parseFloat(newDish.price),
+        ingredients: newDish.ingredients,
+        description,
+        available: true
+      });
+      console.log('Dish added:', res.data);
+      setDishes([...dishes, res.data]);
+      setNewDish({ name: '', price: '', ingredients: '' });
+      alert('Dish published successfully!');
+    } catch (error) {
+      console.error('Failed to add dish:', error);
+      alert('Failed to add dish. Check console for details.');
+    }
     setIsGeneratingDish(false);
   };
 
@@ -270,11 +283,11 @@ export const ChefDashboard: React.FC<{ user: User }> = ({ user }) => {
             <i className="fas fa-receipt mr-4 text-orange-600"></i> Active Kitchen Orders
           </h2>
           <div className="space-y-4">
-            {orders.map(o => (
+            {orders.map((o, index) => (
               <div key={o.id} className="bg-white p-8 rounded-[30px] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6 hover:shadow-md transition-all">
                 <div className="flex items-center gap-6">
                   <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-900 text-xl font-black shadow-inner">
-                    #{o.id}
+                    #{index + 1}
                   </div>
                   <div>
                     <p className="font-bold text-xl text-slate-900">Order from Guest</p>
@@ -307,10 +320,13 @@ export const ChefDashboard: React.FC<{ user: User }> = ({ user }) => {
             <i className="fas fa-utensils mr-4 text-orange-600"></i> Your Digital Menu
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {dishes.map(d => (
+            {dishes.map((d, index) => (
               <div key={d.id} className="bg-white p-8 rounded-[35px] border border-slate-200 shadow-sm hover:shadow-md transition-all">
                 <div className="flex justify-between items-start mb-4">
-                   <h3 className="font-bold text-xl text-slate-900">{d.name}</h3>
+                   <div>
+                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Dish #{index + 1}</span>
+                     <h3 className="font-bold text-xl text-slate-900">{d.name}</h3>
+                   </div>
                    <span className="text-lg font-black text-orange-600">${d.price.toFixed(2)}</span>
                 </div>
                 <p className="text-slate-500 text-sm mb-6 leading-relaxed line-clamp-2">{d.description}</p>
@@ -387,14 +403,14 @@ export const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mockApi.chefs.getAll().then(res => {
+    apiService.chefs.getAllForAdmin().then(res => {
       setChefs(res.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const handleVerify = async (id: number) => {
-    await mockApi.chefs.verify(id);
+    await apiService.chefs.verify(id);
     setChefs(chefs.map(c => c.id === id ? { ...c, verified: true } : c));
   };
 

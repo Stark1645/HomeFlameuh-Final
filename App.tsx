@@ -11,10 +11,11 @@ import Contact from './pages/Contact';
 import Subscriptions from './pages/Subscriptions';
 import ChefAnalytics from './pages/ChefAnalytics';
 import AdminReports from './pages/AdminReports';
+import AdminDishApproval from './pages/AdminDishApproval';
 import OrderTracking from './pages/OrderTracking';
 import Profile from './pages/Profile';
 import { UserDashboard, ChefDashboard, AdminDashboard } from './pages/DashboardPages';
-import { mockApi } from './services/mockApi';
+import { apiService } from './services/apiService';
 import { User, Role, ChefProfile } from './types';
 
 const AppContent: React.FC = () => {
@@ -23,24 +24,54 @@ const AppContent: React.FC = () => {
   const [selectedChef, setSelectedChef] = useState<ChefProfile | null>(null);
   const [trackingOrderId, setTrackingOrderId] = useState<number | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [registerData, setRegisterData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'USER' as 'USER' | 'CHEF' | 'ADMIN',
+    cuisineSpecialty: '',
+    bio: ''
+  });
 
   useEffect(() => {
     const savedUser = localStorage.getItem('hf_user');
-    if (savedUser) setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('hf_token');
+    if (savedUser && token) setUser(JSON.parse(savedUser));
   }, []);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await apiService.auth.register(registerData);
+      setUser(res.data.user);
+      localStorage.setItem('hf_user', JSON.stringify(res.data.user));
+      localStorage.setItem('hf_token', res.data.token);
+      setCurrentPage('home');
+      setRegisterData({ name: '', email: '', password: '', role: 'USER', cuisineSpecialty: '', bio: '' });
+      alert('Account created successfully!');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await mockApi.auth.login(loginEmail);
+      const res = await apiService.auth.login(loginEmail, loginPassword);
       setUser(res.data.user);
       localStorage.setItem('hf_user', JSON.stringify(res.data.user));
+      localStorage.setItem('hf_token', res.data.token);
       setCurrentPage('home');
       setLoginEmail('');
-    } catch (err) {
-      alert("Please use one of the provided demo emails.");
+      setLoginPassword('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +80,7 @@ const AppContent: React.FC = () => {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('hf_user');
+    localStorage.removeItem('hf_token');
     setCurrentPage('home');
   };
 
@@ -63,6 +95,7 @@ const AppContent: React.FC = () => {
       case 'subscriptions': return user ? <Subscriptions user={user} /> : <Home onNavigate={setCurrentPage} />;
       case 'chef-analytics': return user ? <ChefAnalytics user={user} /> : <Home onNavigate={setCurrentPage} />;
       case 'admin-reports': return user ? <AdminReports /> : <Home onNavigate={setCurrentPage} />;
+      case 'admin-dishes': return user ? <AdminDishApproval /> : <Home onNavigate={setCurrentPage} />;
       case 'track-order': return trackingOrderId ? <OrderTracking orderId={trackingOrderId} /> : <Home onNavigate={setCurrentPage} />;
       case 'user-dashboard': return user ? (
         <div className="max-w-7xl mx-auto px-4 py-8">
@@ -88,6 +121,7 @@ const AppContent: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
            <div className="flex gap-4 mb-8">
               <button onClick={() => setCurrentPage('admin-dashboard')} className="font-bold border-b-2 border-orange-600 pb-1">Verifications</button>
+              <button onClick={() => setCurrentPage('admin-dishes')} className="text-slate-500 hover:text-slate-900 transition-colors">Dish Approvals</button>
               <button onClick={() => setCurrentPage('admin-reports')} className="text-slate-500 hover:text-slate-900 transition-colors">Platform Reports</button>
            </div>
            <AdminDashboard />
@@ -101,13 +135,12 @@ const AppContent: React.FC = () => {
               <p className="text-slate-500 mb-8">Ready for some delicious home-cooked food?</p>
               
               <div className="mb-8 p-4 bg-orange-50 border border-orange-100 rounded-2xl">
-                <p className="text-xs font-bold text-orange-700 uppercase tracking-widest mb-2">Demo Credentials</p>
-                <div className="space-y-1">
-                  <button onClick={() => setLoginEmail('alice@user.com')} className="block text-xs text-slate-600 hover:text-orange-600 transition-colors"><strong>Customer:</strong> alice@user.com</button>
-                  <button onClick={() => setLoginEmail('maria@chef.com')} className="block text-xs text-slate-600 hover:text-orange-600 transition-colors"><strong>Chef:</strong> maria@chef.com</button>
-                  <button onClick={() => setLoginEmail('admin@homeflame.com')} className="block text-xs text-slate-600 hover:text-orange-600 transition-colors"><strong>Admin:</strong> admin@homeflame.com</button>
+                <p className="text-xs font-bold text-orange-700 uppercase tracking-widest mb-2">Demo Login</p>
+                <div className="space-y-1 text-xs text-slate-600">
+                  <p><strong>Email:</strong> demo@user.com</p>
+                  <p><strong>Password:</strong> password123</p>
                 </div>
-                <p className="mt-3 text-[10px] text-orange-400 italic">Click an email to auto-fill</p>
+                <p className="mt-3 text-[10px] text-orange-400 italic">Use these credentials or register new account</p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-6">
@@ -120,6 +153,17 @@ const AppContent: React.FC = () => {
                     onChange={e => setLoginEmail(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none bg-slate-50 text-slate-900"
                     placeholder="Enter email"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                  <input 
+                    type="password" 
+                    required 
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none bg-slate-50 text-slate-900"
+                    placeholder="Enter password"
                   />
                 </div>
                 <button 
@@ -135,26 +179,113 @@ const AppContent: React.FC = () => {
         );
       case 'register':
         return (
-          <div className="max-w-2xl mx-auto py-24 px-4 text-center">
-            <h1 className="text-4xl font-extrabold text-slate-900 mb-4">Start Your HomeFlame Journey</h1>
-            <p className="text-lg text-slate-500 mb-12">Whether you're here to cook or here to eat, you're welcome.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div onClick={() => setCurrentPage('login')} className="bg-white p-10 rounded-3xl border-2 border-slate-100 hover:border-orange-600 transition-all cursor-pointer group shadow-sm">
-                <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <i className="fas fa-hat-chef text-3xl"></i>
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Join as Chef</h3>
-                <p className="text-slate-500 mb-6">Share your passion and earn from your own kitchen.</p>
-                <button className="text-orange-600 font-bold border-b-2 border-orange-600 pb-1">Sign Up as Chef</button>
+          <div className="max-w-2xl mx-auto py-12 px-4">
+            <h1 className="text-4xl font-extrabold text-slate-900 mb-4 text-center">Create Your Account</h1>
+            <p className="text-lg text-slate-500 mb-8 text-center">Join HomeFlame and start your culinary journey</p>
+            
+            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl">
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => setRegisterData({...registerData, role: 'USER'})}
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm ${
+                    registerData.role === 'USER' 
+                      ? 'bg-orange-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <i className="fas fa-utensils mr-2"></i> User
+                </button>
+                <button
+                  onClick={() => setRegisterData({...registerData, role: 'CHEF'})}
+                  className={`flex-1 py-3 rounded-xl font-bold transition-all text-sm ${
+                    registerData.role === 'CHEF' 
+                      ? 'bg-orange-600 text-white' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <i className="fas fa-hat-chef mr-2"></i> Chef
+                </button>
               </div>
-              <div onClick={() => setCurrentPage('login')} className="bg-white p-10 rounded-3xl border-2 border-slate-100 hover:border-orange-600 transition-all cursor-pointer group shadow-sm">
-                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                  <i className="fas fa-utensils text-3xl"></i>
+
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={registerData.name}
+                    onChange={e => setRegisterData({...registerData, name: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder="John Doe"
+                  />
                 </div>
-                <h3 className="text-2xl font-bold mb-3">Join as User</h3>
-                <p className="text-slate-500 mb-6">Browse unique cuisines and support local chefs.</p>
-                <button className="text-blue-600 font-bold border-b-2 border-blue-600 pb-1">Sign Up as User</button>
-              </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={registerData.email}
+                    onChange={e => setRegisterData({...registerData, email: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder="john@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={registerData.password}
+                    onChange={e => setRegisterData({...registerData, password: e.target.value})}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder="Minimum 6 characters"
+                    minLength={6}
+                  />
+                </div>
+
+                {registerData.role === 'CHEF' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Cuisine Specialty</label>
+                      <input
+                        type="text"
+                        required
+                        value={registerData.cuisineSpecialty}
+                        onChange={e => setRegisterData({...registerData, cuisineSpecialty: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                        placeholder="e.g., Italian, Indian, Mexican"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Bio (Optional)</label>
+                      <textarea
+                        value={registerData.bio}
+                        onChange={e => setRegisterData({...registerData, bio: e.target.value})}
+                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-orange-500 outline-none"
+                        placeholder="Tell us about your cooking passion..."
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-orange-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-orange-700 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </button>
+              </form>
+
+              <p className="text-center text-sm text-slate-500 mt-6">
+                Already have an account?{' '}
+                <button onClick={() => setCurrentPage('login')} className="text-orange-600 font-bold hover:underline">
+                  Sign In
+                </button>
+              </p>
             </div>
           </div>
         );

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
@@ -11,7 +11,7 @@ const Contact: React.FC = () => {
     e.preventDefault();
     setIsSending(true);
     try {
-      await mockApi.contact.send(formData);
+      await apiService.contact.send(formData);
       setSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
     } catch (err) {

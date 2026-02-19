@@ -6,9 +6,18 @@ const API_KEY =
     (import.meta as any).env?.VITE_GEMINI_API_KEY) ||
   '';
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+let ai: GoogleGenAI | null = null;
+
+try {
+  if (API_KEY) {
+    ai = new GoogleGenAI({ apiKey: API_KEY });
+  }
+} catch (error) {
+  console.warn('Gemini AI not configured. AI features will use fallbacks.');
+}
 
 export const generateDishDescription = async (dishName: string, ingredients: string): Promise<string> => {
+  if (!ai) return "Delicious home-cooked meal prepared with fresh ingredients.";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
@@ -22,6 +31,7 @@ export const generateDishDescription = async (dishName: string, ingredients: str
 };
 
 export const generateChefBio = async (name: string, specialty: string): Promise<string> => {
+  if (!ai) return "Passionate about serving high-quality home-cooked meals.";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
@@ -35,6 +45,7 @@ export const generateChefBio = async (name: string, specialty: string): Promise<
 };
 
 export const getMealRecommendation = async (preferences: string, dishes: any[]): Promise<string> => {
+  if (!ai) return "I recommend trying our chef's signature special!";
   try {
     const dishList = dishes.map(d => `${d.name} (${d.description})`).join(', ');
     const response = await ai.models.generateContent({
@@ -48,6 +59,7 @@ export const getMealRecommendation = async (preferences: string, dishes: any[]):
 };
 
 export const getOrderStatusCommentary = async (status: string, chefName: string): Promise<string> => {
+  if (!ai) return "Chef is working hard to ensure your meal is perfect.";
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',
@@ -60,6 +72,7 @@ export const getOrderStatusCommentary = async (status: string, chefName: string)
 };
 
 export const smartSearchChefs = async (query: string, chefs: any[]): Promise<number[]> => {
+  if (!ai) return chefs.map(c => c.id);
   try {
     const chefData = chefs.map(c => ({ id: c.id, specialty: c.cuisineSpecialty, bio: c.bio }));
     const response = await ai.models.generateContent({
@@ -75,6 +88,7 @@ export const smartSearchChefs = async (query: string, chefs: any[]): Promise<num
 };
 
 export const generateWeeklyMealPlan = async (userPreferences: string, availableDishes: any[]): Promise<string> => {
+  if (!ai) return "Contact our support for a personalized meal plan.";
   try {
     const dishContext = availableDishes.map(d => d.name).join(', ');
     const response = await ai.models.generateContent({
@@ -88,6 +102,7 @@ export const generateWeeklyMealPlan = async (userPreferences: string, availableD
 };
 
 export const optimizeMenuDescription = async (currentDescription: string): Promise<string> => {
+  if (!ai) return currentDescription;
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.0-flash-exp',

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Order, OrderStatus } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 import { getOrderStatusCommentary } from '../services/geminiService';
 
 interface OrderTrackingProps {
@@ -24,7 +24,7 @@ const OrderTracking: React.FC<OrderTrackingProps> = ({ orderId }) => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await mockApi.orders.getById(orderId);
+        const res = await apiService.orders.getById(orderId);
         setOrder(res.data);
         const comment = await getOrderStatusCommentary(res.data.status, res.data.chefName);
         setAiComment(comment);

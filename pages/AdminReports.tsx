@@ -1,17 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { AdminReport } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 
 const AdminReports: React.FC = () => {
   const [report, setReport] = useState<AdminReport | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mockApi.admin.getReport().then(res => {
+    apiService.admin.getReport().then(res => {
       setReport(res.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   if (loading || !report) return <div className="p-20 text-center animate-pulse text-slate-400 uppercase tracking-widest font-bold">Compiling Report Data...</div>;

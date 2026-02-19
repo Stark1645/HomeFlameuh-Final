@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { User, Subscription, SubscriptionPlan, ChefProfile } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 
 interface SubscriptionsProps {
   user: User;
@@ -14,19 +14,18 @@ const Subscriptions: React.FC<SubscriptionsProps> = ({ user }) => {
 
   useEffect(() => {
     Promise.all([
-      mockApi.subscriptions.getByUserId(user.id),
-      mockApi.chefs.getAll()
+      apiService.subscriptions.getByUserId(),
+      apiService.chefs.getAll()
     ]).then(([sRes, cRes]) => {
       setSubs(sRes.data);
       setChefs(cRes.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, [user]);
 
   const handleSubscribe = async (chefId: number, chefName: string, plan: SubscriptionPlan) => {
     try {
-      const res = await mockApi.subscriptions.subscribe({
-        userId: user.id,
+      const res = await apiService.subscriptions.subscribe({
         chefId,
         chefName,
         planType: plan

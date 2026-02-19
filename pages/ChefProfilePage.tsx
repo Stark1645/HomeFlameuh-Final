@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChefProfile, Dish, User, ApiResponse } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 import { getMealRecommendation } from '../services/geminiService';
 
 interface ChefProfilePageProps {
@@ -22,10 +22,26 @@ const ChefProfilePage: React.FC<ChefProfilePageProps> = ({ chef, user, onOrderCo
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const res = await mockApi.dishes.getByChefId(chef.userId);
+        // Extract the actual ID value
+        let chefUserId;
+        if (chef.userId && typeof chef.userId === 'object' && chef.userId._id) {
+          chefUserId = chef.userId._id;
+        } else if (chef.userId) {
+          chefUserId = chef.userId;
+        } else {
+          chefUserId = chef.id;
+        }
+        
+        console.log('=== DISH FETCH DEBUG ===');
+        console.log('Chef object:', chef);
+        console.log('Extracted chefUserId:', chefUserId);
+        
+        const res = await apiService.dishes.getByChefId(chefUserId);
+        console.log('Dishes received:', res.data);
+        console.log('Number of dishes:', res.data.length);
         setDishes(res.data);
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching dishes:', err);
       } finally {
         setLoading(false);
       }
@@ -41,7 +57,7 @@ const ChefProfilePage: React.FC<ChefProfilePageProps> = ({ chef, user, onOrderCo
     }
     setOrdering(true);
     try {
-      const res = await mockApi.orders.create({
+      const res = await apiService.orders.create({
         userId: user.id,
         chefId: chef.userId,
         chefName: chef.name,

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChefProfile } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 import { smartSearchChefs } from '../services/geminiService';
 
 interface BrowseChefsProps {
@@ -18,7 +18,7 @@ const BrowseChefs: React.FC<BrowseChefsProps> = ({ onSelectChef }) => {
   useEffect(() => {
     const fetchChefs = async () => {
       try {
-        const res = await mockApi.chefs.getAll();
+        const res = await apiService.chefs.getAll();
         setChefs(res.data);
         setFilteredChefs(res.data);
       } catch (err) {

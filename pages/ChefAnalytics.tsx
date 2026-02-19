@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ChefAnalytics as AnalyticsType, User } from '../types';
-import { mockApi } from '../services/mockApi';
+import { apiService } from '../services/apiService';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -12,10 +12,10 @@ const ChefAnalytics: React.FC<{ user: User }> = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    mockApi.chefs.getAnalytics(user.id).then(res => {
+    apiService.chefs.getAnalytics().then(res => {
       setData(res.data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, [user]);
 
   if (loading || !data) return <div className="p-20 text-center">Loading kitchen insights...</div>;
