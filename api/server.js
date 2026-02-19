@@ -13,8 +13,15 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+app.use(cors({ 
+  origin: process.env.CLIENT_URL || 'https://homeflameuh-final-1.onrender.com',
+  credentials: true 
+}));
 app.use(express.json());
+
+app.get('/', (req, res) => {
+  res.json({ message: 'HomeFlame API Running', timestamp: new Date().toISOString() });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -27,8 +34,19 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({ 
+    message: err.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err : {} 
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📡 CORS enabled for: ${process.env.CLIENT_URL || 'https://homeflameuh-final-1.onrender.com'}`);
+  });
 });
